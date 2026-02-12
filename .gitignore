@@ -1,0 +1,22 @@
+# Data files (large, downloaded separately)
+data/raw/*.zip
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.json
+
+# DB
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Env
+.env
+*.env
+
+# OS
+.DS_Store
