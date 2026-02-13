@@ -60,6 +60,52 @@ uvicorn api.main:app --port 8000
 | `GET /redoc` | API リファレンス (ReDoc) |
 | `GET /openapi.json` | OpenAPI仕様 (JSON) |
 
+## データ更新ワークフロー
+
+厚労省データは年2回（6月・12月）、法人番号は月次で更新されます。
+
+### 1. 厚労省データ更新
+
+```bash
+# ① CSVダウンロード（fetch_data.py の DEFAULT_DATE を新しい日付に変更）
+#    例: 20260601
+vi scripts/fetch_data.py   # DEFAULT_DATE = "20260601"
+python scripts/fetch_data.py
+
+# ② DBを再構築（既存テーブルをDROPして再作成）
+rm data/medical.db          # or バックアップ: cp data/medical.db data/medical.db.bak
+python scripts/import_data.py
+
+# ③ 法人番号を再マッチング（↓参照）
+python scripts/match_corporate.py
+```
+
+**更新スケジュール**: [医療情報ネット](https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryou/newpage_43373.html) で新しいZIPが公開されたら実行。
+
+### 2. 法人番号データ更新
+
+国税庁の全件CSVは[ダウンロードページ](https://www.houjin-bangou.nta.go.jp/download/zenken/)からCAPTCHA付きで手動ダウンロードが必要。
+
+```bash
+# ① ZIPをダウンロード → data/houjin/ に配置
+#    ファイル名例: 00_zenkoku_all_20260130.zip
+cd data/houjin/
+unzip 00_zenkoku_all_20260130.zip  # → .csv が展開される
+
+# ② マッチング実行（約5分、メモリ2GB推奨）
+cd ~/tools/medical_open_data
+python scripts/match_corporate.py
+#    → facilities テーブルの corporate_number カラムを更新
+```
+
+### 3. 本番反映
+
+```bash
+sudo systemctl restart mods-api
+```
+
+> ⚠️ `data/raw/` と `data/houjin/` は `.gitignore` 済み。CSVファイルはリポジトリに含めないこと。
+
 ## データソース
 
 | ソース | 件数 | 更新 |
