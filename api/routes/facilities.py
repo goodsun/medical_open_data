@@ -93,8 +93,10 @@ def facility_detail(facility_id: str, db: Session = Depends(get_db)):
     return FacilityDetailOut(
         id=fac.id,
         facility_type=fac.facility_type,
+        facility_type_name=FACILITY_TYPE_NAMES.get(fac.facility_type),
         name=fac.name,
         name_kana=fac.name_kana,
+        name_short=fac.name_short,
         name_en=fac.name_en,
         prefecture_code=fac.prefecture_code,
         prefecture_name=pref_name,
@@ -106,6 +108,13 @@ def facility_detail(facility_id: str, db: Session = Depends(get_db)):
         closed_holiday=fac.closed_holiday,
         closed_other=fac.closed_other,
         closed_weekly=fac.closed_weekly,
+        closed_weeks=json.loads(fac.closed_weeks) if isinstance(fac.closed_weeks, str) else fac.closed_weeks,
+        data_date=str(fac.data_date) if fac.data_date else None,
+        business_hours=[{
+            "slot": bh.slot_number,
+            "type": bh.hour_type,
+            "schedule": json.loads(bh.schedule) if isinstance(bh.schedule, str) else bh.schedule,
+        } for bh in fac.business_hours] if fac.business_hours else None,
         specialities=[SpecialtyOut(
             specialty_code=s.specialty_code,
             specialty_name=s.specialty_name,

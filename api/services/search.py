@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 
-from ..models import Facility, Specialty, Prefecture, SpecialtyMaster
+from ..models import Facility, Specialty, Prefecture, SpecialtyMaster, BusinessHour
 from .geo import haversine, bounding_box
 
 
@@ -153,6 +153,7 @@ def get_facility_detail(db: Session, facility_id: str) -> Optional[Facility]:
             joinedload(Facility.specialities),
             joinedload(Facility.beds),
             joinedload(Facility.prefecture),
+            joinedload(Facility.business_hours),
         )
         .filter(Facility.id == facility_id)
         .first()

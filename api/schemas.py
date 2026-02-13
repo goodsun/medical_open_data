@@ -62,8 +62,10 @@ class FacilityDetailOut(BaseModel):
     """詳細用"""
     id: str
     facility_type: int
+    facility_type_name: Optional[str] = None
     name: str
     name_kana: Optional[str] = None
+    name_short: Optional[str] = None
     name_en: Optional[str] = None
     prefecture_code: str
     prefecture_name: Optional[str] = None
@@ -75,8 +77,11 @@ class FacilityDetailOut(BaseModel):
     closed_holiday: Optional[bool] = None
     closed_other: Optional[str] = None
     closed_weekly: Optional[Dict[str, bool]] = None
+    closed_weeks: Optional[Dict[str, Any]] = None
+    data_date: Optional[str] = None
     specialities: List[SpecialtyOut] = []
     beds: Optional[BedOut] = None
+    business_hours: Optional[List[Dict[str, Any]]] = None
     class Config:
         from_attributes = True
 

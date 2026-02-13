@@ -339,15 +339,57 @@ async function showDetail(id) {
       if (closed.length) closedHtml = `<p style="font-size:0.82rem;margin-top:0.5rem;">定休: ${closed.join('・')}</p>`;
     }
 
+    // 病床情報
+    let bedsHtml = '';
+    if (f.beds) {
+      const bedItems = [];
+      if (f.beds.general) bedItems.push(`一般 ${f.beds.general}`);
+      if (f.beds.recuperation) bedItems.push(`療養 ${f.beds.recuperation}`);
+      if (f.beds.psychiatric) bedItems.push(`精神 ${f.beds.psychiatric}`);
+      if (f.beds.tuberculosis) bedItems.push(`結核 ${f.beds.tuberculosis}`);
+      if (f.beds.infectious) bedItems.push(`感染症 ${f.beds.infectious}`);
+      if (f.beds.total) bedItems.push(`<strong>合計 ${f.beds.total}床</strong>`);
+      if (bedItems.length) {
+        bedsHtml = `<div class="detail-section"><h3>🛏️ 病床数</h3><p style="font-size:0.82rem;">${bedItems.join(' ｜ ')}</p></div>`;
+      }
+    }
+
+    // 営業時間（薬局・助産所）
+    let bhHtml = '';
+    if (f.business_hours && f.business_hours.length) {
+      bhHtml = '<div class="detail-section"><h3>🕐 営業時間</h3><div class="spec-list">';
+      f.business_hours.forEach(bh => {
+        if (bh.schedule) {
+          let schedStr = days.map(d => {
+            const v = bh.schedule[d];
+            if (!v) return `<span style="color:#ccc">${dayNames[d]}ー</span>`;
+            return `<span>${dayNames[d]}${v.start||''}〜${v.end||''}</span>`;
+          }).join(' ');
+          bhHtml += `<div class="spec-item">${bh.type==='reception'?'受付':'営業'} (枠${bh.slot}) ${schedStr}</div>`;
+        }
+      });
+      bhHtml += '</div></div>';
+    }
+
     card.innerHTML = `
       <button class="close-btn" onclick="closeDetail()">✕</button>
       <h2>${f.name}</h2>
-      <p style="font-size:0.82rem;color:#666;">${f.name_kana||''}</p>
+      <p style="font-size:0.82rem;color:#666;">${f.name_kana||''} ${f.name_en ? `/ ${f.name_en}` : ''}</p>
+      ${f.name_short ? `<p style="font-size:0.78rem;color:#999;">略称: ${f.name_short}</p>` : ''}
+      <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <span class="type" style="background:#e8f0fe;padding:0.2rem 0.6rem;border-radius:4px;color:#1a73e8;font-size:0.8rem;">${f.facility_type_name||TYPE_NAMES[f.facility_type]||''}</span>
+        <span style="font-size:0.75rem;color:#999;font-family:monospace;">ID: ${f.id}</span>
+      </div>
       <p style="font-size:0.85rem;margin-top:0.5rem;">📍 ${f.address||''}</p>
+      <p style="font-size:0.75rem;color:#999;margin-top:0.2rem;">📐 ${f.latitude||'?'}, ${f.longitude||'?'}</p>
       ${f.website_url ? `<p style="margin-top:0.3rem;"><a href="${f.website_url}" target="_blank" style="color:#1a73e8;font-size:0.85rem;">🌐 ${f.website_url}</a></p>` : ''}
-      <span class="type" style="background:#e8f0fe;padding:0.2rem 0.6rem;border-radius:4px;color:#1a73e8;font-size:0.8rem;">${TYPE_NAMES[f.facility_type]||''}</span>
       ${closedHtml}
+      ${f.closed_holiday===true ? '<p style="font-size:0.82rem;color:#d32f2f;margin-top:0.3rem;">⚠️ 祝日休診</p>' : ''}
+      ${f.closed_other ? `<p style="font-size:0.82rem;margin-top:0.3rem;">📅 その他休診: ${f.closed_other}</p>` : ''}
+      ${bedsHtml}
       ${specsHtml}
+      ${bhHtml}
+      ${f.data_date ? `<p style="font-size:0.72rem;color:#bbb;margin-top:1rem;text-align:right;">データ基準日: ${f.data_date}</p>` : ''}
     `;
   } catch(e) {
     card.innerHTML = `<button class="close-btn" onclick="closeDetail()">✕</button><p>読み込みに失敗しました</p>`;
