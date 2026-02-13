@@ -33,7 +33,15 @@ async def lifespan(app: FastAPI):
                     count = rebuild_fts_index(db)
                     logger.info(f"FTS5: Indexed {count:,} facilities")
             else:
-                logger.info("FTS5: Index already exists")
+                # FTSインデックスとfacilitiesテーブルの件数を比較
+                fts_count = db.execute(text("SELECT count(*) FROM facilities_fts")).scalar()
+                fac_count = db.execute(text("SELECT count(*) FROM facilities")).scalar()
+                if fts_count != fac_count:
+                    logger.info(f"FTS5: Stale index ({fts_count} vs {fac_count}), rebuilding...")
+                    count = rebuild_fts_index(db)
+                    logger.info(f"FTS5: Re-indexed {count:,} facilities")
+                else:
+                    logger.info(f"FTS5: Index up to date ({fts_count:,} entries)")
         except Exception as e:
             logger.warning(f"FTS5 init failed (non-fatal): {e}")
         finally:

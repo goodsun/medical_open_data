@@ -145,6 +145,12 @@ footer a { color: #1a73e8; text-decoration: none; }
           <option value="5">薬局</option>
         </select>
       </div>
+      <div class="field" style="justify-content:end;">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;font-weight:500;color:#333;">
+          <input type="checkbox" id="openNow" style="width:16px;height:16px;cursor:pointer;">
+          🕐 診療中
+        </label>
+      </div>
       <button class="locate-btn" onclick="geolocate()" title="現在地を取得">📍</button>
       <button class="search-btn" id="searchBtn" onclick="doSearch()">検索</button>
     </div>
@@ -228,6 +234,7 @@ async function doSearch() {
   const q = document.getElementById('q').value.trim();
   const specialty = document.getElementById('specialty').value.trim();
   const type = document.getElementById('type').value;
+  const openNow = document.getElementById('openNow').checked;
   const btn = document.getElementById('searchBtn');
   const resultsEl = document.getElementById('results');
   const statsEl = document.getElementById('statsBar');
@@ -244,6 +251,7 @@ async function doSearch() {
       const params = new URLSearchParams({lat: userLat, lng: userLng, radius: 3, limit: 30});
       if (specialty) params.set('specialty', specialty);
       if (type) params.append('type', type);
+      if (openNow) params.set('open_now', 'true');
       const res = await fetch(`${API}/facilities/nearby?${params}`);
       facilities = await res.json();
       total = facilities.length;
@@ -254,6 +262,7 @@ async function doSearch() {
       if (q) params.set('q', q);
       if (specialty) params.set('specialty', specialty);
       if (type) params.append('type', type);
+      if (openNow) params.set('open_now', 'true');
       const res = await fetch(`${API}/facilities?${params}`);
       const data = await res.json();
       facilities = data.data;

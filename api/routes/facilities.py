@@ -1,7 +1,9 @@
 """施設エンドポイント"""
 import json
 import math
+import time
 from typing import Optional, List
+from functools import lru_cache
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,20 @@ from ..services.search import (
     FACILITY_TYPE_NAMES,
 )
 from ..models import Prefecture, SpecialtyMaster
+
+# キャッシュ: 読み取り専用マスタデータ（TTL付き）
+_cache = {}
+CACHE_TTL = 3600  # 1時間
+
+
+def _cached(key, fn):
+    """シンプルなTTLキャッシュ"""
+    now = time.time()
+    if key in _cache and now - _cache[key][1] < CACHE_TTL:
+        return _cache[key][0]
+    result = fn()
+    _cache[key] = (result, now)
+    return result
 
 router = APIRouter(prefix="/api/v1", tags=["facilities"])
 
@@ -135,20 +151,23 @@ def list_specialities(
     category: Optional[str] = Query(None, description="カテゴリ（内科系, 外科系, etc）"),
     db: Session = Depends(get_db),
 ):
-    query = db.query(SpecialtyMaster)
-    if category:
-        query = query.filter(SpecialtyMaster.category == category)
-    return query.order_by(SpecialtyMaster.code).all()
+    cache_key = f"specialities:{category or 'all'}"
+    def fetch():
+        query = db.query(SpecialtyMaster)
+        if category:
+            query = query.filter(SpecialtyMaster.category == category)
+        return query.order_by(SpecialtyMaster.code).all()
+    return _cached(cache_key, fetch)
 
 
 @router.get("/prefectures", response_model=List[PrefectureOut])
 def list_prefectures(db: Session = Depends(get_db)):
-    return db.query(Prefecture).order_by(Prefecture.code).all()
+    return _cached("prefectures", lambda: db.query(Prefecture).order_by(Prefecture.code).all())
 
 
 @router.get("/stats", response_model=StatsOut)
 def stats(db: Session = Depends(get_db)):
-    return get_stats(db)
+    return _cached("stats", lambda: get_stats(db))
 
 
 @router.get("/health")
