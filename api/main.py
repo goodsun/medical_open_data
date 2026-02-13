@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Medical Open Data API",
     description="厚生労働省オープンデータを活用した医療施設検索API",
-    version="0.1.3",
+    version="0.1.4",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
