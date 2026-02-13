@@ -1,10 +1,16 @@
 """検索サービス"""
+import json
+import logging
 from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 
 from ..models import Facility, Specialty, Prefecture, SpecialtyMaster, BusinessHour
 from .geo import haversine, bounding_box
+from .fts import fts_search
+from .open_now import is_open_now
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_specialty_codes(db: Session, keyword: str) -> list:
@@ -27,21 +33,27 @@ def search_facilities(
     prefecture: Optional[str] = None,
     city: Optional[str] = None,
     specialty: Optional[str] = None,
+    open_now: bool = False,
     page: int = 1,
     per_page: int = 20,
 ) -> Tuple[List[Facility], int]:
     """施設検索"""
     query = db.query(Facility)
 
-    # フリーワード（名称・住所）
+    # フリーワード — FTS5優先、ヒット少なければLIKEフォールバック
     if q:
-        query = query.filter(
-            or_(
-                Facility.name.contains(q),
-                Facility.name_kana.contains(q),
-                Facility.address.contains(q),
+        fts_ids = fts_search(db, q)
+        if fts_ids and len(fts_ids) >= 5:
+            query = query.filter(Facility.id.in_(fts_ids))
+        else:
+            # 日本語部分一致はLIKEが確実（FTS5 unicode61は分かち書き不可）
+            query = query.filter(
+                or_(
+                    Facility.name.contains(q),
+                    Facility.name_kana.contains(q),
+                    Facility.address.contains(q),
+                )
             )
-        )
 
     # 施設種別
     if facility_types:
@@ -78,6 +90,27 @@ def search_facilities(
             )
         query = query.filter(exists_q)
 
+    # open_now — 診療中フィルタ（アプリ層でフィルタ）
+    if open_now:
+        # open_nowはschedule JSONを解析する必要があるため、
+        # DB側で絞り込んだ後にアプリ層でフィルタ
+        # まず十分な件数を取得してからフィルタ
+        all_candidates = query.options(joinedload(Facility.specialities)).all()
+        open_facilities = []
+        for fac in all_candidates:
+            schedules = []
+            for s in fac.specialities:
+                sched = json.loads(s.schedule) if isinstance(s.schedule, str) else s.schedule
+                if sched:
+                    schedules.append(sched)
+            if is_open_now(schedules):
+                open_facilities.append(fac)
+
+        total = len(open_facilities)
+        start = (page - 1) * per_page
+        facilities = open_facilities[start:start + per_page]
+        return facilities, total
+
     total = query.count()
     facilities = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -91,6 +124,7 @@ def search_nearby(
     radius_km: float = 5.0,
     facility_types: Optional[List[int]] = None,
     specialty: Optional[str] = None,
+    open_now: bool = False,
     limit: int = 20,
 ) -> List[Tuple[Facility, float]]:
     """近隣検索 — バウンディングボックス→haversine精密計算"""
@@ -131,13 +165,24 @@ def search_nearby(
             )
         query = query.filter(exists_q)
 
-    candidates = query.all()
+    if open_now:
+        candidates = query.options(joinedload(Facility.specialities)).all()
+    else:
+        candidates = query.all()
 
     # haversineで精密距離計算
     results = []
     for fac in candidates:
         dist = haversine(lat, lng, fac.latitude, fac.longitude)
         if dist <= radius_km:
+            if open_now:
+                schedules = []
+                for s in fac.specialities:
+                    sched = json.loads(s.schedule) if isinstance(s.schedule, str) else s.schedule
+                    if sched:
+                        schedules.append(sched)
+                if not is_open_now(schedules):
+                    continue
             results.append((fac, round(dist, 2)))
 
     # 距離順ソート

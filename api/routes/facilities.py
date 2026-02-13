@@ -44,6 +44,7 @@ def list_facilities(
     prefecture: Optional[str] = Query(None, description="都道府県コード (01-47)"),
     city: Optional[str] = Query(None, description="市区町村コード"),
     specialty: Optional[str] = Query(None, description="診療科名（部分一致）またはコード"),
+    open_now: bool = Query(False, description="現在診療中の施設のみ"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -51,7 +52,7 @@ def list_facilities(
     facilities, total = search_facilities(
         db, q=q, facility_types=type,
         prefecture=prefecture, city=city, specialty=specialty,
-        page=page, per_page=per_page,
+        open_now=open_now, page=page, per_page=per_page,
     )
 
     return FacilityListResponse(
@@ -72,12 +73,14 @@ def nearby_facilities(
     radius: float = Query(5.0, ge=0.1, le=50, description="半径 (km)"),
     type: Optional[List[int]] = Query(None, description="施設種別"),
     specialty: Optional[str] = Query(None, description="診療科名"),
+    open_now: bool = Query(False, description="現在診療中の施設のみ"),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     results = search_nearby(
         db, lat=lat, lng=lng, radius_km=radius,
-        facility_types=type, specialty=specialty, limit=limit,
+        facility_types=type, specialty=specialty,
+        open_now=open_now, limit=limit,
     )
     return [_facility_to_list(fac, dist) for fac, dist in results]
 
