@@ -40,13 +40,13 @@ def search_facilities(
     """施設検索"""
     query = db.query(Facility)
 
-    # フリーワード — FTS5優先、ヒット少なければLIKEフォールバック
+    # フリーワード — FTS5(trigram)優先、非対応時はLIKEフォールバック
     if q:
         fts_ids = fts_search(db, q)
-        if fts_ids and len(fts_ids) >= 5:
+        if fts_ids:
             query = query.filter(Facility.id.in_(fts_ids))
         else:
-            # 日本語部分一致はLIKEが確実（FTS5 unicode61は分かち書き不可）
+            # 3文字未満のクエリやFTS5未構築時はLIKEで部分一致
             query = query.filter(
                 or_(
                     Facility.name.contains(q),

@@ -34,7 +34,7 @@ def create_fts_table(db: Session) -> bool:
                 name,
                 name_kana,
                 address,
-                tokenize='unicode61'
+                tokenize='trigram'
             )
         """))
         db.commit()
@@ -86,6 +86,11 @@ def fts_search(db: Session, query: str, limit: int = 1000) -> list:
         # 全角英数→半角に正規化してからFTS検索
         normalized = _normalize(query)
         terms = normalized.strip().split()
+
+        # trigramトークナイザ: 3文字未満のtermがあればFTS不可→空リスト返してLIKEフォールバック
+        if any(len(t) < 3 for t in terms):
+            return []
+
         fts_query = " AND ".join(f'"{t}"' for t in terms if t)
         if not fts_query:
             return []
