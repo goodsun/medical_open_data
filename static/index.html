@@ -348,7 +348,7 @@ async function showDetail(id) {
 
     let specsHtml = '';
     if (f.specialities && f.specialities.length) {
-      // 診療科ごとにグループ化し、有効なslotを1つ選択
+      // 診療科ごとにグループ化し、全slotを統合
       const groups = {};
       f.specialities.forEach(s => {
         if (!groups[s.specialty_name]) groups[s.specialty_name] = [];
@@ -356,17 +356,35 @@ async function showDetail(id) {
       });
       const merged = [];
       Object.entries(groups).forEach(([name, slots]) => {
-        // 有効なスロット（どこかの曜日にデータあり）を優先
-        const active = slots.find(s => s.schedule && days.some(d => s.schedule[d]));
-        if (active) merged.push({name, schedule: active.schedule});
+        // 各曜日について全slotの時間帯を統合
+        const combined = {};
+        let hasAny = false;
+        days.forEach(d => {
+          const times = [];
+          slots.forEach(s => {
+            if (s.schedule && s.schedule[d] && s.schedule[d].start) {
+              times.push(s.schedule[d]);
+            }
+          });
+          if (times.length) {
+            // 開始時刻順にソート
+            times.sort((a, b) => a.start.localeCompare(b.start));
+            combined[d] = times;
+            hasAny = true;
+          } else {
+            combined[d] = null;
+          }
+        });
+        if (hasAny) merged.push({name, combined});
       });
 
-      const fmtTime = v => {
-        if (!v || !v.start) return null;
-        // "09:00-17:00" 形式に短縮
-        const s = v.start.replace(/^0/, '');
-        const e = v.end.replace(/^0/, '');
-        return `${s}-${e}`;
+      const fmtTimes = times => {
+        if (!times) return null;
+        return times.map(v => {
+          const s = v.start.replace(/^0/, '');
+          const e = v.end.replace(/^0/, '');
+          return `${s}-${e}`;
+        }).join('<br>');
       };
 
       specsHtml = '<div class="detail-section"><h3>診療科・診療時間</h3>';
@@ -377,11 +395,11 @@ async function showDetail(id) {
         specsHtml += `<th${cls}>${dayNames[d]}</th>`;
       });
       specsHtml += '</tr></thead><tbody>';
-      merged.forEach(({name, schedule}) => {
+      merged.forEach(({name, combined}) => {
         specsHtml += '<tr>';
         specsHtml += `<td class="spec-name" title="${name}">${name}</td>`;
         days.forEach(d => {
-          const t = schedule ? fmtTime(schedule[d]) : null;
+          const t = fmtTimes(combined[d]);
           if (t) specsHtml += `<td class="on">${t}</td>`;
           else specsHtml += '<td class="off">—</td>';
         });
