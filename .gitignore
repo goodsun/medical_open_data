@@ -3,6 +3,7 @@ data/raw/*.zip
 data/raw/*.csv
 data/processed/*.csv
 data/processed/*.json
+data/houjin/
 
 # DB
 *.db

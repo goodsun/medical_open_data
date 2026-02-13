@@ -59,6 +59,7 @@ class Facility(Base):
     closed_other = Column(Text)       # その他休診日
     closed_weekly = Column(JSON)      # {"mon":true,"tue":false,...}
     closed_weeks = Column(JSON)       # {"week1":{"mon":true,...},...}
+    corporate_number = Column(String(13), index=True)  # 法人番号（13桁）
     raw_data = Column(JSON)           # 種別固有の全カラム
     data_date = Column(Date)          # データ基準日
     created_at = Column(DateTime, default=datetime.utcnow)
