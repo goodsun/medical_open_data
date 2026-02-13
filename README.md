@@ -67,10 +67,9 @@ uvicorn api.main:app --port 8000
 ### 1. 厚労省データ更新
 
 ```bash
-# ① CSVダウンロード（fetch_data.py の DEFAULT_DATE を新しい日付に変更）
-#    例: 20260601
-vi scripts/fetch_data.py   # DEFAULT_DATE = "20260601"
-python scripts/fetch_data.py
+# ① CSVダウンロード（引数にデータ公開日 YYYYMMDD を指定）
+#    厚労省ZIPファイル名の日付部分（例: 20260601）
+python scripts/fetch_data.py 20260601
 
 # ② DBを再構築（既存テーブルをDROPして再作成）
 rm data/medical.db          # or バックアップ: cp data/medical.db data/medical.db.bak
