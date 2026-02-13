@@ -7,7 +7,7 @@
 ## 特徴
 
 - 🔍 **全国200,064施設**を検索（病院・診療所・歯科・助産所・薬局）
-- 🗺️ **地図UI** — 現在地から近くの病院を地図で探せる
+- 🗺️ **地図UI** — 現在地から近くの病院を地図で探せる（診療中フィルタ付き）
 - 📊 **128万件の診療科データ** — 診療時間・休診日まで
 - 🕐 **「今やってる病院」** — `open_now` フィルタで診療中の施設だけ検索
 - 🏢 **法人番号紐付き** — 14.5万施設 (72.4%) に国税庁法人番号をマッチング
@@ -125,6 +125,15 @@ sudo systemctl restart mods-api
 ## 技術スタック
 
 FastAPI / SQLAlchemy 2.0 / Pydantic v2 / SQLite (FTS5) / Leaflet.js / OpenStreetMap
+
+## テスト
+
+```bash
+pip install pytest httpx
+python -m pytest tests/ -v
+```
+
+18本のSmoke testで全エンドポイントの正常動作を確認。
 
 ## DB切り替え
 
