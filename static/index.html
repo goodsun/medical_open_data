@@ -56,8 +56,8 @@ button.search-btn:disabled { background: #aaa; cursor: wait; }
 
 .content { display: flex; gap: 1rem; }
 #map {
-  flex: 1; height: 500px; border-radius: 0 0 0 12px;
-  border: 1px solid #e0e0e0; min-width: 0;
+  flex: 1; height: 500px; min-height: 500px; border-radius: 0 0 0 12px;
+  border: 1px solid #e0e0e0; min-width: 300px; z-index: 1;
 }
 .results-panel {
   width: 380px; max-height: 500px; overflow-y: auto;
@@ -183,6 +183,8 @@ map = L.map('map').setView([35.681, 139.767], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors', maxZoom: 19
 }).addTo(map);
+// Leafletのタイル描画を確実にする
+setTimeout(() => map.invalidateSize(), 200);
 
 function clearMarkers() {
   markers.forEach(m => map.removeLayer(m));
