@@ -107,6 +107,27 @@ footer a { color: #1a73e8; text-decoration: none; }
 .spec-list { font-size: 0.82rem; }
 .spec-item { padding: 0.3rem 0; border-bottom: 1px solid #f5f5f5; }
 
+.schedule-table {
+  width: 100%; border-collapse: collapse; font-size: 0.78rem;
+}
+.schedule-table th {
+  background: #f8f9fa; padding: 0.4rem 0.3rem; font-weight: 600;
+  border-bottom: 2px solid #e0e0e0; color: #555; white-space: nowrap;
+}
+.schedule-table th.day-sat { color: #1a73e8; }
+.schedule-table th.day-sun { color: #d32f2f; }
+.schedule-table td {
+  padding: 0.35rem 0.25rem; border-bottom: 1px solid #f0f0f0;
+  text-align: center; white-space: nowrap;
+}
+.schedule-table td.spec-name {
+  text-align: left; font-weight: 500; padding-left: 0.4rem;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+}
+.schedule-table td.off { color: #ccc; }
+.schedule-table td.on { color: #333; font-size: 0.72rem; }
+.schedule-table tr:hover { background: #f8f9ff; }
+
 @media (max-width: 768px) {
   .content { flex-direction: column; }
   #map { height: 300px; border-radius: 0; }
@@ -327,19 +348,47 @@ async function showDetail(id) {
 
     let specsHtml = '';
     if (f.specialities && f.specialities.length) {
-      specsHtml = '<div class="detail-section"><h3>診療科・診療時間</h3><div class="spec-list">';
+      // 診療科ごとにグループ化し、有効なslotを1つ選択
+      const groups = {};
       f.specialities.forEach(s => {
-        let schedHtml = '';
-        if (s.schedule) {
-          schedHtml = days.map(d => {
-            const v = s.schedule[d];
-            if (!v) return `<span style="color:#ccc">${dayNames[d]}ー</span>`;
-            return `<span>${dayNames[d]}${v.start||''}〜${v.end||''}</span>`;
-          }).join(' ');
-        }
-        specsHtml += `<div class="spec-item"><b>${s.specialty_name}</b> ${schedHtml}</div>`;
+        if (!groups[s.specialty_name]) groups[s.specialty_name] = [];
+        groups[s.specialty_name].push(s);
       });
-      specsHtml += '</div></div>';
+      const merged = [];
+      Object.entries(groups).forEach(([name, slots]) => {
+        // 有効なスロット（どこかの曜日にデータあり）を優先
+        const active = slots.find(s => s.schedule && days.some(d => s.schedule[d]));
+        if (active) merged.push({name, schedule: active.schedule});
+        else merged.push({name, schedule: slots[0].schedule});
+      });
+
+      const fmtTime = v => {
+        if (!v || !v.start) return null;
+        // "09:00-17:00" 形式に短縮
+        const s = v.start.replace(/^0/, '');
+        const e = v.end.replace(/^0/, '');
+        return `${s}-${e}`;
+      };
+
+      specsHtml = '<div class="detail-section"><h3>診療科・診療時間</h3>';
+      specsHtml += '<div style="overflow-x:auto;"><table class="schedule-table"><thead><tr>';
+      specsHtml += '<th style="text-align:left;">診療科</th>';
+      days.forEach(d => {
+        const cls = d==='sat'?' class="day-sat"':d==='sun'?' class="day-sun"':'';
+        specsHtml += `<th${cls}>${dayNames[d]}</th>`;
+      });
+      specsHtml += '</tr></thead><tbody>';
+      merged.forEach(({name, schedule}) => {
+        specsHtml += '<tr>';
+        specsHtml += `<td class="spec-name" title="${name}">${name}</td>`;
+        days.forEach(d => {
+          const t = schedule ? fmtTime(schedule[d]) : null;
+          if (t) specsHtml += `<td class="on">${t}</td>`;
+          else specsHtml += '<td class="off">—</td>';
+        });
+        specsHtml += '</tr>';
+      });
+      specsHtml += '</tbody></table></div></div>';
     }
 
     let closedHtml = '';
