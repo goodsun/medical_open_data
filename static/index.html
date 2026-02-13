@@ -379,6 +379,7 @@ async function showDetail(id) {
       <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
         <span class="type" style="background:#e8f0fe;padding:0.2rem 0.6rem;border-radius:4px;color:#1a73e8;font-size:0.8rem;">${f.facility_type_name||TYPE_NAMES[f.facility_type]||''}</span>
         <span style="font-size:0.75rem;color:#999;font-family:monospace;">ID: ${f.id}</span>
+        ${f.corporate_number ? `<a href="https://www.houjin-bangou.nta.go.jp/henkou-kensaku/?shoession=open&isHoujinBangou=0&hbSearchTextMask=${f.corporate_number}" target="_blank" style="font-size:0.75rem;font-family:monospace;color:#1a73e8;">法人番号: ${f.corporate_number} ↗</a>` : ''}
       </div>
       <p style="font-size:0.85rem;margin-top:0.5rem;">📍 ${f.address||''}</p>
       <p style="font-size:0.75rem;color:#999;margin-top:0.2rem;">📐 ${f.latitude||'?'}, ${f.longitude||'?'}</p>

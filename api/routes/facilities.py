@@ -108,6 +108,7 @@ def facility_detail(facility_id: str, db: Session = Depends(get_db)):
         closed_holiday=fac.closed_holiday,
         closed_other=fac.closed_other,
         closed_weekly=fac.closed_weekly,
+        corporate_number=fac.corporate_number,
         closed_weeks=json.loads(fac.closed_weeks) if isinstance(fac.closed_weeks, str) else fac.closed_weeks,
         data_date=str(fac.data_date) if fac.data_date else None,
         business_hours=[{

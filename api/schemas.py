@@ -78,6 +78,7 @@ class FacilityDetailOut(BaseModel):
     closed_other: Optional[str] = None
     closed_weekly: Optional[Dict[str, bool]] = None
     closed_weeks: Optional[Dict[str, Any]] = None
+    corporate_number: Optional[str] = None
     data_date: Optional[str] = None
     specialities: List[SpecialtyOut] = []
     beds: Optional[BedOut] = None
