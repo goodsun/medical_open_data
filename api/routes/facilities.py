@@ -1,4 +1,5 @@
 """施設エンドポイント"""
+import json
 import math
 from typing import Optional, List
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -105,7 +106,13 @@ def facility_detail(facility_id: str, db: Session = Depends(get_db)):
         closed_holiday=fac.closed_holiday,
         closed_other=fac.closed_other,
         closed_weekly=fac.closed_weekly,
-        specialities=[SpecialtyOut.model_validate(s) for s in fac.specialities],
+        specialities=[SpecialtyOut(
+            specialty_code=s.specialty_code,
+            specialty_name=s.specialty_name,
+            time_slot=s.time_slot,
+            schedule=json.loads(s.schedule) if isinstance(s.schedule, str) else s.schedule,
+            reception=json.loads(s.reception) if isinstance(s.reception, str) else s.reception,
+        ) for s in fac.specialities],
         beds=BedOut.model_validate(fac.beds) if fac.beds else None,
     )
 
