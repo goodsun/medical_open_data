@@ -19,8 +19,22 @@ header p { font-size: 0.85rem; opacity: 0.8; margin-top: 0.3rem; }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
 
+/* データソースタブ */
+.data-tabs {
+  display: flex; gap: 0; margin-bottom: 1rem;
+}
+.data-tab {
+  padding: 0.7rem 1.5rem; border: 2px solid #ddd; background: #f1f3f4;
+  cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #666;
+  transition: all 0.2s; border-bottom: none;
+}
+.data-tab:first-child { border-radius: 10px 0 0 0; }
+.data-tab:last-child { border-radius: 0 10px 0 0; }
+.data-tab.active-medical { background: #1a73e8; color: white; border-color: #1a73e8; }
+.data-tab.active-kaigo { background: #2e7d32; color: white; border-color: #2e7d32; }
+
 .search-panel {
-  background: white; border-radius: 12px; padding: 1.2rem;
+  background: white; border-radius: 0 12px 12px 12px; padding: 1.2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1rem;
 }
 .search-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: end; }
@@ -32,27 +46,20 @@ header p { font-size: 0.85rem; opacity: 0.8; margin-top: 0.3rem; }
 }
 .field input:focus, .field select:focus { border-color: #1a73e8; }
 button.search-btn {
-  padding: 0.5rem 1.5rem; background: #1a73e8; color: white;
+  padding: 0.5rem 1.5rem; color: white;
   border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
   cursor: pointer; transition: background 0.2s; white-space: nowrap;
 }
-button.search-btn:hover { background: #1557b0; }
+button.search-btn.medical { background: #1a73e8; }
+button.search-btn.medical:hover { background: #1557b0; }
+button.search-btn.kaigo { background: #2e7d32; }
+button.search-btn.kaigo:hover { background: #1b5e20; }
 button.search-btn:disabled { background: #aaa; cursor: wait; }
 .locate-btn {
   padding: 0.5rem 0.8rem; background: #f1f3f4; border: 1.5px solid #ddd;
   border-radius: 8px; cursor: pointer; font-size: 1rem; transition: background 0.2s;
 }
 .locate-btn:hover { background: #e2e5e8; }
-
-.tabs { display: flex; gap: 0; margin-bottom: 0; }
-.tab {
-  padding: 0.6rem 1.2rem; background: #e8eaed; border: none;
-  cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #666;
-  transition: all 0.2s;
-}
-.tab:first-child { border-radius: 8px 0 0 0; }
-.tab:last-child { border-radius: 0 8px 0 0; }
-.tab.active { background: white; color: #1a73e8; }
 
 .content { display: flex; gap: 1rem; }
 #map {
@@ -72,9 +79,11 @@ button.search-btn:disabled { background: #aaa; cursor: wait; }
 .result-item.active { background: #e8f0fe; }
 .result-name { font-weight: 600; font-size: 0.9rem; }
 .result-addr { font-size: 0.78rem; color: #666; margin-top: 0.2rem; }
-.result-meta { font-size: 0.75rem; color: #888; margin-top: 0.3rem; display: flex; gap: 0.8rem; }
+.result-meta { font-size: 0.75rem; color: #888; margin-top: 0.3rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
 .result-meta .dist { color: #1a73e8; font-weight: 600; }
-.result-meta .type { background: #e8f0fe; padding: 0.1rem 0.5rem; border-radius: 4px; color: #1a73e8; }
+.result-meta .type { padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.72rem; }
+.result-meta .type-medical { background: #e8f0fe; color: #1a73e8; }
+.result-meta .type-kaigo { background: #e8f5e9; color: #2e7d32; }
 .no-results { padding: 2rem; text-align: center; color: #999; }
 .loading { padding: 2rem; text-align: center; color: #666; }
 
@@ -82,6 +91,17 @@ button.search-btn:disabled { background: #aaa; cursor: wait; }
   font-size: 0.78rem; color: #888; padding: 0.5rem 1rem;
   background: #fafafa; border-bottom: 1px solid #f0f0f0;
 }
+
+/* 介護フィルタ */
+.kaigo-filters { display: none; margin-top: 0.6rem; }
+.kaigo-filters.show { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.category-chip {
+  padding: 0.3rem 0.7rem; border-radius: 16px; font-size: 0.78rem;
+  border: 1.5px solid #ddd; background: white; cursor: pointer;
+  transition: all 0.2s; color: #666;
+}
+.category-chip:hover { border-color: #2e7d32; color: #2e7d32; }
+.category-chip.active { background: #2e7d32; color: white; border-color: #2e7d32; }
 
 footer {
   text-align: center; padding: 1.5rem; font-size: 0.78rem; color: #999;
@@ -104,8 +124,6 @@ footer a { color: #1a73e8; text-decoration: none; }
 }
 .detail-section { margin-top: 1rem; }
 .detail-section h3 { font-size: 0.85rem; color: #1a73e8; margin-bottom: 0.4rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
-.spec-list { font-size: 0.82rem; }
-.spec-item { padding: 0.3rem 0; border-bottom: 1px solid #f5f5f5; }
 
 .schedule-table {
   width: 100%; border-collapse: collapse; font-size: 0.78rem;
@@ -126,7 +144,6 @@ footer a { color: #1a73e8; text-decoration: none; }
 }
 .schedule-table td.off { color: #ccc; }
 .schedule-table td.on { color: #333; font-size: 0.72rem; }
-.schedule-table tr:hover { background: #f8f9ff; }
 
 @media (max-width: 768px) {
   .content { flex-direction: column; }
@@ -140,22 +157,29 @@ footer a { color: #1a73e8; text-decoration: none; }
 <body>
 
 <header>
-  <h1>🏥 MODS <span>Medical Open Data Search</span></h1>
-  <p>厚生労働省オープンデータ 全国20万施設の医療機関検索</p>
+  <h1>🏥 MODS <span>Medical &amp; Care Open Data Search</span></h1>
+  <p>厚生労働省オープンデータ — 医療施設20万件 + 介護事業所22万件</p>
 </header>
 
 <div class="container">
+  <!-- データソース切り替えタブ -->
+  <div class="data-tabs">
+    <div class="data-tab active-medical" id="tabMedical" onclick="switchMode('medical')">🏥 医療施設</div>
+    <div class="data-tab" id="tabKaigo" onclick="switchMode('kaigo')">🤝 介護事業所</div>
+  </div>
+
   <div class="search-panel">
     <div class="search-row">
       <div class="field" style="flex:2">
         <label>キーワード（施設名・住所）</label>
         <input type="text" id="q" placeholder="例: 渋谷、〇〇クリニック">
       </div>
-      <div class="field" style="flex:1">
+      <!-- 医療用フィルタ -->
+      <div class="field medical-only" style="flex:1">
         <label>診療科</label>
         <input type="text" id="specialty" placeholder="例: 内科、小児科">
       </div>
-      <div class="field" style="flex:1">
+      <div class="field medical-only" style="flex:1">
         <label>施設種別</label>
         <select id="type">
           <option value="">すべて</option>
@@ -166,14 +190,34 @@ footer a { color: #1a73e8; text-decoration: none; }
           <option value="5">薬局</option>
         </select>
       </div>
-      <div class="field" style="justify-content:end;">
+      <div class="field medical-only" style="justify-content:end;">
         <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;font-weight:500;color:#333;">
           <input type="checkbox" id="openNow" style="width:16px;height:16px;cursor:pointer;">
           🕐 診療中
         </label>
       </div>
+      <!-- 介護用フィルタ -->
+      <div class="field kaigo-only" style="flex:1; display:none;">
+        <label>サービス種別</label>
+        <select id="kaigoService">
+          <option value="">すべて</option>
+        </select>
+      </div>
       <button class="locate-btn" onclick="geolocate()" title="現在地を取得">📍</button>
-      <button class="search-btn" id="searchBtn" onclick="doSearch()">検索</button>
+      <button class="search-btn medical" id="searchBtn" onclick="doSearch()">検索</button>
+    </div>
+    <!-- 介護カテゴリチップ -->
+    <div class="kaigo-filters" id="kaigoFilters">
+      <div class="category-chip" data-cat="" onclick="selectCategory(this)">すべて</div>
+      <div class="category-chip" data-cat="訪問系" onclick="selectCategory(this)">🏠 訪問系</div>
+      <div class="category-chip" data-cat="通所系" onclick="selectCategory(this)">🏢 通所系</div>
+      <div class="category-chip" data-cat="入所系" onclick="selectCategory(this)">🏨 入所系</div>
+      <div class="category-chip" data-cat="短期入所系" onclick="selectCategory(this)">📅 短期入所系</div>
+      <div class="category-chip" data-cat="居住系" onclick="selectCategory(this)">🏠 居住系</div>
+      <div class="category-chip" data-cat="居宅支援" onclick="selectCategory(this)">📋 居宅支援</div>
+      <div class="category-chip" data-cat="福祉用具" onclick="selectCategory(this)">🦽 福祉用具</div>
+      <div class="category-chip" data-cat="地域密着型" onclick="selectCategory(this)">📍 地域密着型</div>
+      <div class="category-chip" data-cat="複合・小規模" onclick="selectCategory(this)">🔄 複合・小規模</div>
     </div>
     <div id="geoStatus" style="font-size:0.75rem; color:#888; margin-top:0.4rem;"></div>
   </div>
@@ -192,10 +236,10 @@ footer a { color: #1a73e8; text-decoration: none; }
 </div>
 
 <footer>
-  データ出典: <a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryou/newpage_43373.html" target="_blank">厚生労働省 医療情報ネット オープンデータ</a>（令和6年12月1日時点）
-  ｜ <a href="/redoc" target="_blank">API リファレンス</a>
+  データ出典: <a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryou/newpage_43373.html" target="_blank">厚労省 医療情報ネット</a>
+  ｜ <a href="https://www.mhlw.go.jp/stf/kaigo-kouhyou_opendata.html" target="_blank">介護サービス情報公表</a>
   ｜ <a href="/docs" target="_blank">API Playground</a>
-  ｜ <a href="/openapi.json" target="_blank">OpenAPI (JSON)</a>
+  ｜ <a href="/redoc" target="_blank">API Reference</a>
   ｜ <a href="https://github.com/goodsun/medical_open_data" target="_blank">GitHub</a>
 </footer>
 
@@ -206,29 +250,84 @@ const TYPE_NAMES = {1:'病院',2:'診療所',3:'歯科',4:'助産所',5:'薬局'
 const TYPE_COLORS = {1:'#d32f2f',2:'#1a73e8',3:'#7b1fa2',4:'#e65100',5:'#2e7d32'};
 
 let map, markers = [], userMarker = null, userLat = null, userLng = null;
+let currentMode = 'medical'; // 'medical' or 'kaigo'
+let kaigoServices = []; // サービス種別マスタキャッシュ
+let selectedCategory = '';
 
-// Map init
 map = L.map('map').setView([35.681, 139.767], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors', maxZoom: 19
 }).addTo(map);
-// Leafletのタイル描画を確実にする
 setTimeout(() => map.invalidateSize(), 200);
+
+// 介護サービス種別を読み込み
+fetch(`${API}/kaigo/services`).then(r => r.json()).then(data => {
+  kaigoServices = data;
+  const sel = document.getElementById('kaigoService');
+  data.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.code;
+    opt.textContent = `${s.name}`;
+    opt.dataset.category = s.category || '';
+    sel.appendChild(opt);
+  });
+}).catch(() => {});
+
+function switchMode(mode) {
+  currentMode = mode;
+  const tabM = document.getElementById('tabMedical');
+  const tabK = document.getElementById('tabKaigo');
+  const btn = document.getElementById('searchBtn');
+
+  tabM.className = 'data-tab' + (mode === 'medical' ? ' active-medical' : '');
+  tabK.className = 'data-tab' + (mode === 'kaigo' ? ' active-kaigo' : '');
+
+  document.querySelectorAll('.medical-only').forEach(el => el.style.display = mode === 'medical' ? '' : 'none');
+  document.querySelectorAll('.kaigo-only').forEach(el => el.style.display = mode === 'kaigo' ? '' : 'none');
+  document.getElementById('kaigoFilters').classList.toggle('show', mode === 'kaigo');
+
+  btn.className = 'search-btn ' + mode;
+  document.getElementById('q').placeholder = mode === 'medical'
+    ? '例: 渋谷、〇〇クリニック'
+    : '例: 渋谷、訪問介護';
+}
+
+function selectCategory(el) {
+  document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedCategory = el.dataset.cat;
+
+  // フィルタselect更新
+  const sel = document.getElementById('kaigoService');
+  sel.innerHTML = '<option value="">すべて</option>';
+  kaigoServices.forEach(s => {
+    if (!selectedCategory || s.category === selectedCategory) {
+      const opt = document.createElement('option');
+      opt.value = s.code;
+      opt.textContent = s.name;
+      sel.appendChild(opt);
+    }
+  });
+}
 
 function clearMarkers() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 }
 
-function addMarker(fac, idx) {
-  const color = TYPE_COLORS[fac.facility_type] || '#666';
+function addMarker(fac, idx, isKaigo) {
+  if (!fac.latitude || !fac.longitude) return;
+  const color = isKaigo ? '#2e7d32' : (TYPE_COLORS[fac.facility_type] || '#666');
   const icon = L.divIcon({
     html: `<div style="background:${color};color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">${idx+1}</div>`,
     iconSize: [24, 24], iconAnchor: [12, 12], className: ''
   });
   const m = L.marker([fac.latitude, fac.longitude], {icon}).addTo(map);
-  m.bindPopup(`<b>${fac.name}</b><br>${fac.address||''}<br><a href="${fac.website_url}" target="_blank">Web</a>`);
-  m.on('click', () => showDetail(fac.id));
+  const popupText = isKaigo
+    ? `<b>${fac.name}</b><br>${fac.service_type||''}<br>${fac.address||''}`
+    : `<b>${fac.name}</b><br>${fac.address||''}`;
+  m.bindPopup(popupText);
+  m.on('click', () => isKaigo ? showKaigoDetail(fac.id) : showDetail(fac.id));
   markers.push(m);
 }
 
@@ -248,10 +347,15 @@ function geolocate() {
         iconSize: [16,16], iconAnchor: [8,8], className: ''
       })
     }).addTo(map);
-  }, err => { st.textContent = '位置情報を取得できませんでした'; });
+  }, () => { st.textContent = '位置情報を取得できませんでした'; });
 }
 
 async function doSearch() {
+  if (currentMode === 'kaigo') return doSearchKaigo();
+  return doSearchMedical();
+}
+
+async function doSearchMedical() {
   const q = document.getElementById('q').value.trim();
   const specialty = document.getElementById('specialty').value.trim();
   const type = document.getElementById('type').value;
@@ -268,7 +372,6 @@ async function doSearch() {
     let facilities = [], total = 0, isNearby = false;
 
     if (userLat && !q) {
-      // 現在地 nearby 検索
       const params = new URLSearchParams({lat: userLat, lng: userLng, radius: 3, limit: 30});
       if (specialty) params.set('specialty', specialty);
       if (type) params.append('type', type);
@@ -278,7 +381,6 @@ async function doSearch() {
       total = facilities.length;
       isNearby = true;
     } else {
-      // キーワード検索
       const params = new URLSearchParams({per_page: 30});
       if (q) params.set('q', q);
       if (specialty) params.set('specialty', specialty);
@@ -290,47 +392,94 @@ async function doSearch() {
       total = data.pagination.total;
     }
 
-    if (!facilities.length) {
-      resultsEl.innerHTML = '<div class="no-results">該当する施設が見つかりませんでした</div>';
-      statsEl.style.display = 'none';
-      return;
-    }
-
-    statsEl.textContent = isNearby
-      ? `📍 現在地周辺 ${total}件（半径3km）`
-      : `${total.toLocaleString()}件中 ${facilities.length}件を表示`;
-    statsEl.style.display = 'block';
-
-    resultsEl.innerHTML = '';
-    const bounds = [];
-
-    facilities.forEach((fac, i) => {
-      const div = document.createElement('div');
-      div.className = 'result-item';
-      div.innerHTML = `
-        <div class="result-name">${fac.name}</div>
-        <div class="result-addr">${fac.address||'住所不明'}</div>
-        <div class="result-meta">
-          <span class="type">${TYPE_NAMES[fac.facility_type]||''}</span>
-          ${fac.distance_km != null ? `<span class="dist">${fac.distance_km}km</span>` : ''}
-          ${fac.website_url ? `<a href="${fac.website_url}" target="_blank" onclick="event.stopPropagation()" style="color:#1a73e8;">Web↗</a>` : ''}
-        </div>`;
-      div.onclick = () => showDetail(fac.id);
-      resultsEl.appendChild(div);
-
-      if (fac.latitude && fac.longitude) {
-        addMarker(fac, i);
-        bounds.push([fac.latitude, fac.longitude]);
-      }
-    });
-
-    if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 15});
-
+    renderResults(facilities, total, isNearby, false);
   } catch (e) {
-    resultsEl.innerHTML = `<div class="no-results">エラーが発生しました: ${e.message}</div>`;
+    resultsEl.innerHTML = `<div class="no-results">エラー: ${e.message}</div>`;
   } finally {
     btn.disabled = false; btn.textContent = '検索';
   }
+}
+
+async function doSearchKaigo() {
+  const q = document.getElementById('q').value.trim();
+  const service = document.getElementById('kaigoService').value;
+  const btn = document.getElementById('searchBtn');
+  const resultsEl = document.getElementById('results');
+  const statsEl = document.getElementById('statsBar');
+
+  btn.disabled = true; btn.textContent = '検索中...';
+  resultsEl.innerHTML = '<div class="loading">🔍 検索中...</div>';
+  clearMarkers();
+
+  try {
+    let facilities = [], total = 0, isNearby = false;
+
+    if (userLat && !q) {
+      const params = new URLSearchParams({lat: userLat, lng: userLng, radius: 3, limit: 30});
+      if (service) params.set('service', service);
+      const res = await fetch(`${API}/kaigo/nearby?${params}`);
+      facilities = await res.json();
+      total = facilities.length;
+      isNearby = true;
+    } else {
+      const params = new URLSearchParams({per_page: 30});
+      if (q) params.set('q', q);
+      if (service) params.set('service', service);
+      const res = await fetch(`${API}/kaigo?${params}`);
+      const data = await res.json();
+      facilities = data.data;
+      total = data.pagination.total;
+    }
+
+    renderResults(facilities, total, isNearby, true);
+  } catch (e) {
+    resultsEl.innerHTML = `<div class="no-results">エラー: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '検索';
+  }
+}
+
+function renderResults(facilities, total, isNearby, isKaigo) {
+  const resultsEl = document.getElementById('results');
+  const statsEl = document.getElementById('statsBar');
+
+  if (!facilities.length) {
+    resultsEl.innerHTML = '<div class="no-results">該当する施設が見つかりませんでした</div>';
+    statsEl.style.display = 'none';
+    return;
+  }
+
+  statsEl.textContent = isNearby
+    ? `📍 現在地周辺 ${total}件（半径3km）`
+    : `${total.toLocaleString()}件中 ${facilities.length}件を表示`;
+  statsEl.style.display = 'block';
+
+  resultsEl.innerHTML = '';
+  const bounds = [];
+
+  facilities.forEach((fac, i) => {
+    const div = document.createElement('div');
+    div.className = 'result-item';
+    const typeCls = isKaigo ? 'type-kaigo' : 'type-medical';
+    const typeLabel = isKaigo ? (fac.service_type || '') : (TYPE_NAMES[fac.facility_type] || '');
+    div.innerHTML = `
+      <div class="result-name">${fac.name}</div>
+      <div class="result-addr">${fac.address||'住所不明'}</div>
+      <div class="result-meta">
+        <span class="type ${typeCls}">${typeLabel}</span>
+        ${fac.distance_km != null ? `<span class="dist">${fac.distance_km}km</span>` : ''}
+        ${fac.phone ? `<span>📞 ${fac.phone}</span>` : ''}
+      </div>`;
+    div.onclick = () => isKaigo ? showKaigoDetail(fac.id) : showDetail(fac.id);
+    resultsEl.appendChild(div);
+
+    if (fac.latitude && fac.longitude) {
+      addMarker(fac, i, isKaigo);
+      bounds.push([fac.latitude, fac.longitude]);
+    }
+  });
+
+  if (bounds.length) map.fitBounds(bounds, {padding: [30, 30], maxZoom: 15});
 }
 
 async function showDetail(id) {
@@ -348,7 +497,6 @@ async function showDetail(id) {
 
     let specsHtml = '';
     if (f.specialities && f.specialities.length) {
-      // 診療科ごとにグループ化し、全slotを統合
       const groups = {};
       f.specialities.forEach(s => {
         if (!groups[s.specialty_name]) groups[s.specialty_name] = [];
@@ -356,116 +504,112 @@ async function showDetail(id) {
       });
       const merged = [];
       Object.entries(groups).forEach(([name, slots]) => {
-        // 各曜日について全slotの時間帯を統合
         const combined = {};
         let hasAny = false;
         days.forEach(d => {
           const times = [];
           slots.forEach(s => {
-            if (s.schedule && s.schedule[d] && s.schedule[d].start) {
-              times.push(s.schedule[d]);
-            }
+            if (s.schedule && s.schedule[d] && s.schedule[d].start) times.push(s.schedule[d]);
           });
-          if (times.length) {
-            // 開始時刻順にソート
-            times.sort((a, b) => a.start.localeCompare(b.start));
-            combined[d] = times;
-            hasAny = true;
-          } else {
-            combined[d] = null;
-          }
+          if (times.length) { times.sort((a, b) => a.start.localeCompare(b.start)); combined[d] = times; hasAny = true; }
+          else combined[d] = null;
         });
         if (hasAny) merged.push({name, combined});
       });
 
-      const fmtTimes = times => {
-        if (!times) return null;
-        return times.map(v => {
-          const s = v.start.replace(/^0/, '');
-          const e = v.end.replace(/^0/, '');
-          return `${s}-${e}`;
-        }).join('<br>');
-      };
+      const fmtTimes = times => times ? times.map(v => `${v.start.replace(/^0/,'')}-${v.end.replace(/^0/,'')}`).join('<br>') : null;
 
-      specsHtml = '<div class="detail-section"><h3>診療科・診療時間</h3>';
-      specsHtml += '<div style="overflow-x:auto;"><table class="schedule-table"><thead><tr>';
-      specsHtml += '<th style="text-align:left;">診療科</th>';
-      days.forEach(d => {
-        const cls = d==='sat'?' class="day-sat"':d==='sun'?' class="day-sun"':'';
-        specsHtml += `<th${cls}>${dayNames[d]}</th>`;
-      });
+      specsHtml = '<div class="detail-section"><h3>診療科・診療時間</h3><div style="overflow-x:auto;"><table class="schedule-table"><thead><tr><th style="text-align:left;">診療科</th>';
+      days.forEach(d => { const cls = d==='sat'?' class="day-sat"':d==='sun'?' class="day-sun"':''; specsHtml += `<th${cls}>${dayNames[d]}</th>`; });
       specsHtml += '</tr></thead><tbody>';
       merged.forEach(({name, combined}) => {
-        specsHtml += '<tr>';
-        specsHtml += `<td class="spec-name" title="${name}">${name}</td>`;
-        days.forEach(d => {
-          const t = fmtTimes(combined[d]);
-          if (t) specsHtml += `<td class="on">${t}</td>`;
-          else specsHtml += '<td class="off">—</td>';
-        });
+        specsHtml += `<tr><td class="spec-name" title="${name}">${name}</td>`;
+        days.forEach(d => { const t = fmtTimes(combined[d]); specsHtml += t ? `<td class="on">${t}</td>` : '<td class="off">—</td>'; });
         specsHtml += '</tr>';
       });
       specsHtml += '</tbody></table></div></div>';
     }
 
-    let closedHtml = '';
-    if (f.closed_weekly) {
-      const closed = days.filter(d => f.closed_weekly[d]).map(d => dayNames[d]);
-      if (closed.length) closedHtml = `<p style="font-size:0.82rem;margin-top:0.5rem;">定休: ${closed.join('・')}</p>`;
-    }
-
-    // 病床情報
     let bedsHtml = '';
     if (f.beds) {
-      const bedItems = [];
-      if (f.beds.general) bedItems.push(`一般 ${f.beds.general}`);
-      if (f.beds.recuperation) bedItems.push(`療養 ${f.beds.recuperation}`);
-      if (f.beds.psychiatric) bedItems.push(`精神 ${f.beds.psychiatric}`);
-      if (f.beds.tuberculosis) bedItems.push(`結核 ${f.beds.tuberculosis}`);
-      if (f.beds.infectious) bedItems.push(`感染症 ${f.beds.infectious}`);
-      if (f.beds.total) bedItems.push(`<strong>合計 ${f.beds.total}床</strong>`);
-      if (bedItems.length) {
-        bedsHtml = `<div class="detail-section"><h3>🛏️ 病床数</h3><p style="font-size:0.82rem;">${bedItems.join(' ｜ ')}</p></div>`;
-      }
-    }
-
-    // 営業時間（薬局・助産所）
-    let bhHtml = '';
-    if (f.business_hours && f.business_hours.length) {
-      bhHtml = '<div class="detail-section"><h3>🕐 営業時間</h3><div class="spec-list">';
-      f.business_hours.forEach(bh => {
-        if (bh.schedule) {
-          let schedStr = days.map(d => {
-            const v = bh.schedule[d];
-            if (!v) return `<span style="color:#ccc">${dayNames[d]}ー</span>`;
-            return `<span>${dayNames[d]}${v.start||''}〜${v.end||''}</span>`;
-          }).join(' ');
-          bhHtml += `<div class="spec-item">${bh.type==='reception'?'受付':'営業'} (枠${bh.slot}) ${schedStr}</div>`;
-        }
-      });
-      bhHtml += '</div></div>';
+      const items = [];
+      if (f.beds.general) items.push(`一般 ${f.beds.general}`);
+      if (f.beds.recuperation) items.push(`療養 ${f.beds.recuperation}`);
+      if (f.beds.psychiatric) items.push(`精神 ${f.beds.psychiatric}`);
+      if (f.beds.total) items.push(`<strong>合計 ${f.beds.total}床</strong>`);
+      if (items.length) bedsHtml = `<div class="detail-section"><h3>🛏️ 病床数</h3><p style="font-size:0.82rem;">${items.join(' ｜ ')}</p></div>`;
     }
 
     card.innerHTML = `
       <button class="close-btn" onclick="closeDetail()">✕</button>
       <h2>${f.name}</h2>
-      <p style="font-size:0.82rem;color:#666;">${f.name_kana||''} ${f.name_en ? `/ ${f.name_en}` : ''}</p>
-      ${f.name_short ? `<p style="font-size:0.78rem;color:#999;">略称: ${f.name_short}</p>` : ''}
+      <p style="font-size:0.82rem;color:#666;">${f.name_kana||''}</p>
       <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-        <span class="type" style="background:#e8f0fe;padding:0.2rem 0.6rem;border-radius:4px;color:#1a73e8;font-size:0.8rem;">${f.facility_type_name||TYPE_NAMES[f.facility_type]||''}</span>
+        <span class="type type-medical" style="padding:0.2rem 0.6rem;border-radius:4px;font-size:0.8rem;">${f.facility_type_name||TYPE_NAMES[f.facility_type]||''}</span>
         <span style="font-size:0.75rem;color:#999;font-family:monospace;">ID: ${f.id}</span>
-        ${f.corporate_number ? `<a href="https://info.gbiz.go.jp/hojin/ichiran?hojinBango=${f.corporate_number}" target="_blank" style="font-size:0.75rem;font-family:monospace;color:#1a73e8;">法人番号: ${f.corporate_number} ↗</a>` : ''}
+        ${f.corporate_number ? `<a href="https://info.gbiz.go.jp/hojin/ichiran?hojinBango=${f.corporate_number}" target="_blank" style="font-size:0.75rem;color:#1a73e8;">法人番号: ${f.corporate_number} ↗</a>` : ''}
       </div>
       <p style="font-size:0.85rem;margin-top:0.5rem;">📍 ${f.address||''}</p>
-      <p style="font-size:0.75rem;color:#999;margin-top:0.2rem;">📐 ${f.latitude||'?'}, ${f.longitude||'?'}</p>
-      ${f.website_url ? `<p style="margin-top:0.3rem;"><a href="${f.website_url}" target="_blank" style="color:#1a73e8;font-size:0.85rem;">🌐 ${f.website_url}</a></p>` : ''}
-      ${closedHtml}
-      ${f.closed_holiday===true ? '<p style="font-size:0.82rem;color:#d32f2f;margin-top:0.3rem;">⚠️ 祝日休診</p>' : ''}
-      ${f.closed_other ? `<p style="font-size:0.82rem;margin-top:0.3rem;">📅 その他休診: ${f.closed_other}</p>` : ''}
+      ${f.website_url ? `<p style="margin-top:0.3rem;"><a href="${f.website_url}" target="_blank" style="color:#1a73e8;font-size:0.85rem;">🌐 Web</a></p>` : ''}
       ${bedsHtml}
       ${specsHtml}
-      ${bhHtml}
       ${f.data_date ? `<p style="font-size:0.72rem;color:#bbb;margin-top:1rem;text-align:right;">データ基準日: ${f.data_date}</p>` : ''}
+    `;
+  } catch(e) {
+    card.innerHTML = `<button class="close-btn" onclick="closeDetail()">✕</button><p>読み込みに失敗しました</p>`;
+  }
+}
+
+async function showKaigoDetail(id) {
+  const overlay = document.getElementById('detailOverlay');
+  const card = document.getElementById('detailCard');
+  card.innerHTML = '<div class="loading">読み込み中...</div>';
+  overlay.classList.add('show');
+
+  try {
+    const res = await fetch(`${API}/kaigo/${id}`);
+    const services = await res.json();
+    if (!services.length) throw new Error('not found');
+    const f = services[0];
+
+    const dayNames = {'mon':'月','tue':'火','wed':'水','thu':'木','fri':'金','sat':'土','sun':'日','holiday':'祝'};
+    let daysHtml = '';
+    if (f.available_days) {
+      const open = Object.entries(f.available_days).filter(([,v]) => v).map(([k]) => dayNames[k]||k);
+      if (open.length) daysHtml = `<p style="font-size:0.82rem;margin-top:0.5rem;">📅 利用可能: ${open.join('・')}</p>`;
+    }
+
+    let servicesHtml = '';
+    if (services.length > 1) {
+      servicesHtml = '<div class="detail-section"><h3>提供サービス</h3>';
+      services.forEach(s => {
+        servicesHtml += `<div style="font-size:0.82rem;padding:0.3rem 0;border-bottom:1px solid #f0f0f0;">
+          <span class="type type-kaigo" style="padding:0.1rem 0.5rem;border-radius:4px;">${s.service_type}</span>
+          ${s.capacity ? `定員: ${s.capacity}名` : ''}
+        </div>`;
+      });
+      servicesHtml += '</div>';
+    }
+
+    card.innerHTML = `
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+      <h2>${f.name}</h2>
+      <p style="font-size:0.82rem;color:#666;">${f.name_kana||''}</p>
+      <div style="margin-top:0.8rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <span class="type type-kaigo" style="padding:0.2rem 0.6rem;border-radius:4px;font-size:0.8rem;">${f.service_type}</span>
+        <span style="font-size:0.75rem;color:#999;font-family:monospace;">事業所番号: ${f.id}</span>
+        ${f.corporate_number ? `<a href="https://info.gbiz.go.jp/hojin/ichiran?hojinBango=${f.corporate_number}" target="_blank" style="font-size:0.75rem;color:#2e7d32;">法人番号: ${f.corporate_number} ↗</a>` : ''}
+      </div>
+      <p style="font-size:0.85rem;margin-top:0.5rem;">📍 ${f.address||''} ${f.address_detail||''}</p>
+      ${f.phone ? `<p style="font-size:0.85rem;margin-top:0.3rem;">📞 ${f.phone}</p>` : ''}
+      ${f.fax ? `<p style="font-size:0.82rem;color:#666;">📠 FAX: ${f.fax}</p>` : ''}
+      ${f.corporate_name ? `<p style="font-size:0.82rem;margin-top:0.3rem;">🏢 ${f.corporate_name}</p>` : ''}
+      ${f.website_url ? `<p style="margin-top:0.3rem;"><a href="${f.website_url}" target="_blank" style="color:#2e7d32;font-size:0.85rem;">🌐 Web</a></p>` : ''}
+      ${daysHtml}
+      ${f.capacity ? `<p style="font-size:0.82rem;margin-top:0.3rem;">👥 定員: ${f.capacity}名</p>` : ''}
+      ${f.available_days_note ? `<p style="font-size:0.78rem;color:#888;margin-top:0.3rem;">※ ${f.available_days_note}</p>` : ''}
+      ${servicesHtml}
+      ${f.note ? `<p style="font-size:0.78rem;color:#888;margin-top:0.5rem;">📝 ${f.note}</p>` : ''}
     `;
   } catch(e) {
     card.innerHTML = `<button class="close-btn" onclick="closeDetail()">✕</button><p>読み込みに失敗しました</p>`;
@@ -476,7 +620,6 @@ function closeDetail() {
   document.getElementById('detailOverlay').classList.remove('show');
 }
 
-// Enter key
 document.querySelectorAll('#q,#specialty').forEach(el => {
   el.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 });

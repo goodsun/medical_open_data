@@ -12,3 +12,8 @@ DATABASE_URL = os.getenv(
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 DATA_DATE = os.getenv("DATA_DATE", "20251201")
+
+KAIGO_DATABASE_URL = os.getenv(
+    "KAIGO_DATABASE_URL",
+    f"sqlite:///{BASE_DIR / 'data' / 'kaigo.db'}"
+)

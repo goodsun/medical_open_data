@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 
 from .routes.facilities import router as facilities_router
 from .routes.catalog import router as catalog_router
+from .routes.kaigo import router as kaigo_router
 from .database import SessionLocal
 from .services.fts import create_fts_table, rebuild_fts_index, IS_SQLITE
 
@@ -69,6 +70,7 @@ app.add_middleware(
 
 app.include_router(facilities_router)
 app.include_router(catalog_router)
+app.include_router(kaigo_router)
 
 
 @app.get("/")
