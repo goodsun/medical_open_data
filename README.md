@@ -16,6 +16,55 @@
   - 薬局
 - [介護サービス情報公表 オープンデータ](https://www.mhlw.go.jp/stf/kaigo-kouhyou_opendata.html)
 
+## クイックスタート
+
+```bash
+# 依存インストール
+pip install -r requirements.txt
+
+# データダウンロード（厚労省から最新CSV取得）
+python scripts/fetch_data.py
+
+# DBインポート（SQLiteに全データ取り込み、約10分）
+python scripts/import_data.py
+
+# APIサーバー起動
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+# ブラウザで http://localhost:8000/docs を開くとSwagger UIが使える
+```
+
+### APIの使い方
+
+```bash
+# 渋谷駅から1km以内の内科を検索
+curl "http://localhost:8000/api/v1/facilities/nearby?lat=35.658&lng=139.702&radius=1&specialty=内科"
+
+# 東京都の病院一覧
+curl "http://localhost:8000/api/v1/facilities?prefecture=13&type=1"
+
+# 施設詳細（診療科・病床情報付き）
+curl "http://localhost:8000/api/v1/facilities/0111010000010"
+
+# 統計情報
+curl "http://localhost:8000/api/v1/stats"
+```
+
+### DB切り替え
+
+環境変数 `DATABASE_URL` を変えるだけ:
+
+```bash
+# SQLite（デフォルト）
+DATABASE_URL=sqlite:///data/medical.db
+
+# PostgreSQL
+DATABASE_URL=postgresql://user:pass@host:5432/medical
+
+# MySQL
+DATABASE_URL=mysql+pymysql://user:pass@host:3306/medical
+```
+
 ## 構成
 
 ```
