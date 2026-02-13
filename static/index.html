@@ -359,7 +359,6 @@ async function showDetail(id) {
         // 有効なスロット（どこかの曜日にデータあり）を優先
         const active = slots.find(s => s.schedule && days.some(d => s.schedule[d]));
         if (active) merged.push({name, schedule: active.schedule});
-        else merged.push({name, schedule: slots[0].schedule});
       });
 
       const fmtTime = v => {
