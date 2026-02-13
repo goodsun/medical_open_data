@@ -107,10 +107,15 @@ IPAデジタルアーキテクチャ・デザインセンター（DADC）が経�
 ## ロードマップ
 
 ```
-Phase 1 (MVP)
-  ├── CSV→DB取り込みパイプライン
-  ├── REST API（検索・近隣検索）
-  └── SQLite / PostgreSQL / MySQL対応
+Phase 1 (MVP) ✅
+  ├── CSV→DB取り込みパイプライン ✅
+  ├── REST API（検索・近隣検索） ✅
+  ├── SQLite / PostgreSQL / MySQL対応 ✅
+  ├── Web UI（地図検索） ✅
+  ├── 法人番号マッチング（国税庁CSV） ✅
+  ├── FTS5 全文検索 ✅
+  ├── open_now 診療中フィルタ ✅
+  └── DCAT カタログエンドポイント ✅
 
 Phase 2 (データスペース準備)
   ├── ODS-RAMアーキテクチャへの適合検討

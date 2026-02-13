@@ -9,8 +9,11 @@
 - 🔍 **全国200,064施設**を検索（病院・診療所・歯科・助産所・薬局）
 - 🗺️ **地図UI** — 現在地から近くの病院を地図で探せる
 - 📊 **128万件の診療科データ** — 診療時間・休診日まで
+- 🕐 **「今やってる病院」** — `open_now` フィルタで診療中の施設だけ検索
 - 🏢 **法人番号紐付き** — 14.5万施設 (72.4%) に国税庁法人番号をマッチング
+- ⚡ **全文検索 (FTS5)** — NFKC正規化で全角/半角を問わず高速検索
 - 📖 **OpenAPI仕様** — Swagger UI / ReDoc / JSON
+- 📋 **DCATカタログ** — データスペース連携用メタデータ (JSON-LD)
 
 ## デモ
 
@@ -18,11 +21,17 @@
 # 渋谷駅から1km以内の内科
 curl "https://mods.bon-soleil.com/api/v1/facilities/nearby?lat=35.658&lng=139.702&radius=1&specialty=内科"
 
+# 今やってる内科（渋谷）
+curl "https://mods.bon-soleil.com/api/v1/facilities?q=渋谷&specialty=内科&open_now=true"
+
 # 東京都の病院一覧
 curl "https://mods.bon-soleil.com/api/v1/facilities?prefecture=13&type=1"
 
 # 施設詳細（法人番号・診療科・病床付き）
 curl "https://mods.bon-soleil.com/api/v1/facilities/0111010000010"
+
+# データカタログ（DCAT-AP JSON-LD）
+curl "https://mods.bon-soleil.com/api/v1/catalog"
 ```
 
 ## クイックスタート（ローカル）
@@ -50,12 +59,13 @@ uvicorn api.main:app --port 8000
 | パス | 説明 |
 |------|------|
 | `GET /` | Web UI（地図付き検索） |
-| `GET /api/v1/facilities` | 施設検索（キーワード・診療科・種別・地域） |
-| `GET /api/v1/facilities/nearby` | 近隣検索（緯度経度 + 半径） |
+| `GET /api/v1/facilities` | 施設検索（キーワード・診療科・種別・地域・`open_now`） |
+| `GET /api/v1/facilities/nearby` | 近隣検索（緯度経度 + 半径・`open_now`） |
 | `GET /api/v1/facilities/{id}` | 施設詳細 |
 | `GET /api/v1/specialities` | 診療科マスタ |
 | `GET /api/v1/prefectures` | 都道府県一覧 |
 | `GET /api/v1/stats` | 統計情報 |
+| `GET /api/v1/catalog` | DCATカタログ (JSON-LD) |
 | `GET /docs` | API Playground (Swagger UI) |
 | `GET /redoc` | API リファレンス (ReDoc) |
 | `GET /openapi.json` | OpenAPI仕様 (JSON) |
@@ -114,7 +124,7 @@ sudo systemctl restart mods-api
 
 ## 技術スタック
 
-FastAPI / SQLAlchemy 2.0 / Pydantic v2 / SQLite / Leaflet.js / OpenStreetMap
+FastAPI / SQLAlchemy 2.0 / Pydantic v2 / SQLite (FTS5) / Leaflet.js / OpenStreetMap
 
 ## DB切り替え
 

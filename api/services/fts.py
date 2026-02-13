@@ -11,6 +11,12 @@ from ..config import DATABASE_URL
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize(text: str) -> str:
+    """全角英数→半角、半角カナ→全角に正規化"""
+    import unicodedata
+    return unicodedata.normalize("NFKC", text)
+
 # FTS5はSQLite専用
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
@@ -45,11 +51,17 @@ def rebuild_fts_index(db: Session) -> int:
         return 0
 
     db.execute(text("DELETE FROM facilities_fts"))
-    result = db.execute(text("""
-        INSERT INTO facilities_fts(facility_id, name, name_kana, address)
-        SELECT id, name, COALESCE(name_kana, ''), COALESCE(address, '')
-        FROM facilities
-    """))
+    # 全件取得してPython側でNFKC正規化（全角英数→半角）してからINSERT
+    rows = db.execute(text(
+        "SELECT id, name, COALESCE(name_kana, ''), COALESCE(address, '') FROM facilities"
+    )).fetchall()
+    BATCH = 5000
+    for i in range(0, len(rows), BATCH):
+        batch = rows[i:i + BATCH]
+        db.execute(
+            text("INSERT INTO facilities_fts(facility_id, name, name_kana, address) VALUES(:id, :name, :kana, :addr)"),
+            [{"id": r[0], "name": _normalize(r[1]), "kana": _normalize(r[2]), "addr": _normalize(r[3])} for r in batch]
+        )
     db.commit()
     count = db.execute(text("SELECT count(*) FROM facilities_fts")).scalar()
     return count
@@ -71,8 +83,9 @@ def fts_search(db: Session, query: str, limit: int = 1000) -> list:
         if not exists:
             return []
 
-        # スペース区切りをAND検索に変換
-        terms = query.strip().split()
+        # 全角英数→半角に正規化してからFTS検索
+        normalized = _normalize(query)
+        terms = normalized.strip().split()
         fts_query = " AND ".join(f'"{t}"' for t in terms if t)
         if not fts_query:
             return []
