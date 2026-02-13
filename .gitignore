@@ -6,6 +6,8 @@ data/processed/*.json
 
 # DB
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 
 # Python
