@@ -1,17 +1,20 @@
-"""法人番号マッチング — 国税庁全件CSVと医療施設をマッチング"""
+"""法人番号マッチング — 国税庁全件CSVと医療施設をマッチング
+戦略:
+  Phase 1: 法人名の完全一致マッチ
+  Phase 2: 住所ベースマッチ（医療関連法人に絞ってメモリ節約）
+"""
 import csv
 import sqlite3
 import re
 import sys
-import os
+import unicodedata
+from typing import Optional
 from collections import defaultdict
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 DB_PATH = DATA_DIR / "medical.db"
 HOUJIN_DIR = DATA_DIR / "houjin"
-
-# ========== 法人名抽出 ==========
 
 CORP_PREFIXES = [
     '特定医療法人社団', '特定医療法人財団', '特定医療法人',
@@ -23,169 +26,228 @@ CORP_PREFIXES = [
     '特定非営利活動法人', '宗教法人',
 ]
 
-
-def extract_corp_name(facility_name: str) -> str | None:
-    """施設名から法人名を抽出"""
-    # 全角スペース/半角スペースで分割
-    parts = re.split(r'[\s　]+', facility_name.strip())
-
-    if len(parts) >= 2:
-        for prefix in CORP_PREFIXES:
-            if parts[0].startswith(prefix):
-                return parts[0]
-
-    # スペースなしの場合: 「医療法人社団〇〇会△△病院」→「医療法人社団〇〇会」
-    for prefix in CORP_PREFIXES:
-        if facility_name.startswith(prefix):
-            # prefix以降で「会」「園」「社」等で切る
-            rest = facility_name[len(prefix):]
-            # 「〇〇会」パターン
-            m = re.match(r'(.+?(?:会|園|社|組|舎|団))', rest)
-            if m:
-                return prefix + m.group(1)
-            # 会が無い場合（「医療法人徳洲会」等はprefixに含まれないので）
-            # スペースなしで法人名が見つからない
-            break
-
-    return None
+# 住所マッチ対象の法人種別プレフィックス
+MEDICAL_CORP_PREFIXES = [
+    '医療法人', '社会医療法人', '特定医療法人',
+    '社会福祉法人', '独立行政法人', '地方独立行政法人',
+    '国立大学法人', '学校法人',
+    '一般社団法人', '一般財団法人', '公益社団法人', '公益財団法人',
+    '株式会社', '有限会社', '合同会社',  # 薬局は株式会社が多い
+    '特定非営利活動法人',
+]
 
 
 def normalize(text: str) -> str:
-    """正規化: 全角→半角、スペース除去、カタカナ→ひらがな等"""
-    import unicodedata
     text = unicodedata.normalize('NFKC', text)
     text = re.sub(r'\s+', '', text)
     return text.lower()
 
 
-# ========== 法人番号CSV読み込み ==========
-
-def load_houjin_csv() -> dict:
-    """国税庁CSVを読み込み、法人名→(法人番号, 住所)のマッピングを作成"""
-    # CSVフォーマット (Unicode版):
-    # 1:シーケンス番号, 2:法人番号, 3:処理区分, 4:訂正区分, 5:更新年月日,
-    # 6:変更年月日, 7:法人名, 8:法人名ふりがな, 9:法人名英語,
-    # 10:都道府県コード(JIS), 11:市区町村コード(JIS), 12:郵便番号,
-    # 13:所在地, 14:所在地(英語), ...
-
-    corp_map = {}  # normalized_name -> [(corp_number, address, original_name)]
-    addr_map = defaultdict(list)  # normalized_addr_prefix -> [(corp_number, name)]
-
-    csv_files = sorted(HOUJIN_DIR.glob("*.csv"))
-    if not csv_files:
-        print(f"ERROR: No CSV files found in {HOUJIN_DIR}")
-        sys.exit(1)
-
-    total = 0
-    for csv_file in csv_files:
-        print(f"Reading {csv_file.name}...")
-        # Try encodings
-        for enc in ['utf-8-sig', 'utf-8', 'cp932']:
-            try:
-                with open(csv_file, encoding=enc, errors='replace') as f:
-                    reader = csv.reader(f)
-                    for row in reader:
-                        if len(row) < 13:
-                            continue
-                        corp_number = row[1]
-                        corp_name = row[6]
-                        address = row[12] if len(row) > 12 else ""
-
-                        if not corp_number or not corp_name:
-                            continue
-
-                        total += 1
-                        norm_name = normalize(corp_name)
-                        if norm_name not in corp_map:
-                            corp_map[norm_name] = []
-                        corp_map[norm_name].append((corp_number, address, corp_name))
-
-                        # 住所の先頭30文字でもインデックス
-                        if address:
-                            addr_key = normalize(address[:30])
-                            addr_map[addr_key].append((corp_number, corp_name))
-
-                break  # encoding succeeded
-            except UnicodeDecodeError:
-                continue
-
-    print(f"Loaded {total} corporations, {len(corp_map)} unique names")
-    return corp_map, addr_map
+def normalize_address(addr: str) -> str:
+    """住所を正規化（番地レベルまで）"""
+    addr = unicodedata.normalize('NFKC', addr)
+    addr = re.sub(r'\s+', '', addr)
+    # 「丁目」「番地」「号」の前の数字を半角に（NFKCで済むはず）
+    # ビル名・階数を除去（最後の方にある）
+    # 簡易: 数字+階、数字+F、ビル名っぽい部分を除去
+    addr = re.sub(r'[（(].+?[）)]', '', addr)  # 括弧内除去
+    return addr
 
 
-# ========== マッチング ==========
+def addr_key(addr: str, level: int = 3) -> str:
+    """住所からマッチング用キーを生成
+    level 1: 都道府県+市区町村
+    level 2: +町名
+    level 3: +番地（デフォルト）
+    """
+    norm = normalize_address(addr)
+    if level == 1:
+        # 最初の「市」「区」「町」「村」「郡」まで
+        m = re.match(r'(.+?(?:市|区|町|村|郡))', norm)
+        return m.group(1) if m else norm[:10]
+    elif level == 2:
+        # 町名まで（数字の前まで）
+        m = re.match(r'(.+?(?:丁目|番|号|[0-9]))', norm)
+        return m.group(1) if m else norm[:20]
+    else:
+        # 番地まで（30文字でカット）
+        return norm[:30]
 
-def match_facilities(corp_map, addr_map):
-    """医療施設と法人番号をマッチング"""
+
+def extract_corp_name(facility_name: str) -> Optional[str]:
+    """施設名から法人名を抽出"""
+    parts = re.split(r'[\s　]+', facility_name.strip())
+
+    # スペース区切りで前半が法人名
+    if len(parts) >= 2:
+        for prefix in CORP_PREFIXES:
+            if parts[0].startswith(prefix):
+                return parts[0]
+        # 「医療法人　〇〇会　△△病院」→「医療法人〇〇会」
+        if len(parts) >= 3:
+            combined = parts[0] + parts[1]
+            for prefix in CORP_PREFIXES:
+                if combined.startswith(prefix):
+                    return combined
+
+    # スペースなし: 「〇〇会」で切る
+    for prefix in CORP_PREFIXES:
+        if facility_name.startswith(prefix):
+            rest = facility_name[len(prefix):]
+            m = re.match(r'(.+?(?:会|園|社|組|舎|団))', rest)
+            if m:
+                return prefix + m.group(1)
+            break
+
+    return None
+
+
+def run():
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
 
+    # === Step 1: 施設データ読み込み ===
     c.execute("SELECT id, name, address, facility_type FROM facilities")
     facilities = c.fetchall()
+    print(f"施設数: {len(facilities):,}")
 
-    matched = 0
-    matched_by_name = 0
-    matched_by_addr = 0
-    total = len(facilities)
-    updates = []
+    # 法人名ルックアップ
+    name_lookup = defaultdict(list)  # norm_corp_name -> [(fid, addr)]
+    # 住所ルックアップ
+    addr_lookup = defaultdict(list)  # addr_key -> [(fid, name, facility_type)]
 
     for fid, fname, faddr, ftype in facilities:
-        corp_name = extract_corp_name(fname)
-        corp_number = None
+        corp = extract_corp_name(fname)
+        if corp:
+            name_lookup[normalize(corp)].append((fid, faddr or ""))
 
-        # 1. 法人名で完全一致
-        if corp_name:
-            norm = normalize(corp_name)
-            candidates = corp_map.get(norm, [])
-            if len(candidates) == 1:
-                corp_number = candidates[0][0]
-                matched_by_name += 1
-            elif len(candidates) > 1 and faddr:
-                # 同名法人が複数→住所で絞り込み
-                norm_addr = normalize(faddr)
-                for cn, addr, _ in candidates:
-                    if addr and normalize(addr[:20]) in norm_addr:
-                        corp_number = cn
-                        matched_by_name += 1
-                        break
+        if faddr:
+            for level in [3, 2]:
+                key = addr_key(faddr, level)
+                if key:
+                    addr_lookup[key].append((fid, fname, ftype))
 
-        # 2. 住所マッチング（法人名抽出できなかった場合）
-        # TODO: Phase 2で実装
+    print(f"法人名抽出: {sum(len(v) for v in name_lookup.values()):,}件, ユニーク: {len(name_lookup):,}")
+    print(f"住所キー: {len(addr_lookup):,}件")
 
-        if corp_number:
-            matched += 1
-            updates.append((corp_number, fid))
+    # === Step 2: 国税庁CSVストリーム ===
+    csv_files = sorted(HOUJIN_DIR.glob("*.csv"))
+    if not csv_files:
+        print(f"ERROR: No CSV files in {HOUJIN_DIR}")
+        sys.exit(1)
 
-    # バッチ更新
-    if updates:
-        c.executemany("UPDATE facilities SET corporate_number = ? WHERE id = ?", updates)
-        conn.commit()
+    matches = {}  # fid -> corp_number
+    csv_total = 0
 
-    print(f"\n=== マッチング結果 ===")
-    print(f"総施設数: {total:,}")
-    print(f"マッチ成功: {matched:,} ({matched/total*100:.1f}%)")
-    print(f"  法人名一致: {matched_by_name:,}")
-    print(f"  住所補完: {matched_by_addr:,}")
-    print(f"未マッチ: {total - matched:,}")
+    for csv_file in csv_files:
+        print(f"\nStreaming {csv_file.name}...")
+        with open(csv_file, encoding='utf-8-sig', errors='replace') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if len(row) < 13:
+                    continue
+                corp_number = row[1]
+                corp_name = row[6]
+                # 住所は都道府県(9)+市区町村(10)+番地(11)を結合
+                corp_addr = (row[9] if len(row) > 9 else "") + \
+                            (row[10] if len(row) > 10 else "") + \
+                            (row[11] if len(row) > 11 else "")
 
-    # 種別ごとの統計
+                if not corp_number or not corp_name:
+                    continue
+
+                csv_total += 1
+                if csv_total % 1000000 == 0:
+                    print(f"  ...{csv_total:,}行, マッチ: {len(matches):,}")
+
+                norm_name = normalize(corp_name)
+
+                # Phase 1: 法人名完全一致
+                candidates = name_lookup.get(norm_name)
+                if candidates:
+                    if len(candidates) == 1:
+                        fid, _ = candidates[0]
+                        if fid not in matches:
+                            matches[fid] = corp_number
+                    else:
+                        # 同名→住所で絞り込み
+                        norm_caddr = normalize_address(corp_addr) if corp_addr else ""
+                        for fid, faddr in candidates:
+                            if fid in matches:
+                                continue
+                            if norm_caddr and faddr:
+                                norm_faddr = normalize_address(faddr)
+                                if (norm_caddr[:15] in norm_faddr or
+                                        norm_faddr[:15] in norm_caddr):
+                                    matches[fid] = corp_number
+
+                # Phase 2: 住所マッチ（医療関連法人のみ）
+                if corp_addr:
+                    is_medical = any(corp_name.startswith(p) for p in MEDICAL_CORP_PREFIXES)
+                    if is_medical:
+                        for level in [3, 2]:
+                            key = addr_key(corp_addr, level)
+                            fac_candidates = addr_lookup.get(key)
+                            if fac_candidates:
+                                for fid, fname, ftype in fac_candidates:
+                                    if fid in matches:
+                                        continue
+                                    # 法人種別と施設種別の整合性チェック
+                                    if _type_compatible(corp_name, ftype):
+                                        matches[fid] = corp_number
+
+    print(f"\nCSV読み込み完了: {csv_total:,}法人")
+    print(f"マッチ: {len(matches):,}")
+
+    # === Step 3: DB更新 ===
+    c.execute("UPDATE facilities SET corporate_number = NULL")
+    updates = [(cn, fid) for fid, cn in matches.items()]
+    c.executemany("UPDATE facilities SET corporate_number = ? WHERE id = ?", updates)
+    conn.commit()
+
+    # 統計
+    type_names = {1: '病院', 2: '診療所', 3: '歯科', 4: '助産所', 5: '薬局'}
     c.execute("""
-        SELECT facility_type,
-               COUNT(*) as total,
-               COUNT(corporate_number) as matched
+        SELECT facility_type, COUNT(*) as total, COUNT(corporate_number) as matched
         FROM facilities GROUP BY facility_type ORDER BY facility_type
     """)
-    type_names = {1: '病院', 2: '診療所', 3: '歯科', 4: '助産所', 5: '薬局'}
-    print(f"\n--- 種別ごと ---")
+    print(f"\n=== 最終結果 ===")
+    gt, gm = 0, 0
     for ft, tot, mat in c.fetchall():
-        print(f"  {type_names.get(ft, ft)}: {mat}/{tot} ({mat/tot*100:.1f}%)")
+        print(f"  {type_names.get(ft, ft)}: {mat:,}/{tot:,} ({mat/tot*100:.1f}%)")
+        gt += tot
+        gm += mat
+    print(f"  合計: {gm:,}/{gt:,} ({gm/gt*100:.1f}%)")
 
     conn.close()
 
 
+def _type_compatible(corp_name: str, facility_type: int) -> bool:
+    """法人種別と施設種別が整合するかチェック"""
+    # 薬局(5)→株式会社/有限会社/医療法人OK
+    # 病院(1)/診療所(2)→医療法人系OK
+    # 歯科(3)→医療法人系OK
+    # 助産所(4)→あまり法人化されてない
+    if facility_type in (1, 2, 3):
+        return any(corp_name.startswith(p) for p in [
+            '医療法人', '社会医療法人', '特定医療法人',
+            '社会福祉法人', '独立行政法人', '地方独立行政法人',
+            '国立大学法人', '学校法人',
+            '一般社団法人', '一般財団法人', '公益社団法人', '公益財団法人',
+            '特定非営利活動法人',
+        ])
+    elif facility_type == 5:  # 薬局
+        return any(corp_name.startswith(p) for p in [
+            '株式会社', '有限会社', '合同会社', '医療法人',
+            '一般社団法人', '一般財団法人',
+        ])
+    elif facility_type == 4:  # 助産所
+        return any(corp_name.startswith(p) for p in [
+            '医療法人', '一般社団法人',
+        ])
+    return False
+
+
 if __name__ == "__main__":
-    print("=== 法人番号マッチング ===")
-    print(f"DB: {DB_PATH}")
-    print(f"法人CSV: {HOUJIN_DIR}")
-    corp_map, addr_map = load_houjin_csv()
-    match_facilities(corp_map, addr_map)
+    print("=== 法人番号マッチング v2（名称+住所）===")
+    run()
