@@ -3,8 +3,19 @@ from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 
-from ..models import Facility, Specialty, Prefecture
+from ..models import Facility, Specialty, Prefecture, SpecialtyMaster
 from .geo import haversine, bounding_box
+
+
+def _resolve_specialty_codes(db: Session, keyword: str) -> list:
+    """診療科キーワード→コード一覧を解決（マスタ検索→コードでインデックス活用）"""
+    codes = [
+        row[0] for row in
+        db.query(SpecialtyMaster.code)
+        .filter(SpecialtyMaster.name.contains(keyword))
+        .all()
+    ]
+    return codes
 
 FACILITY_TYPE_NAMES = {1: "病院", 2: "診療所", 3: "歯科", 4: "助産所", 5: "薬局"}
 
@@ -44,14 +55,28 @@ def search_facilities(
     if city:
         query = query.filter(Facility.city_code == city)
 
-    # 診療科
+    # 診療科 — EXISTSサブクエリ（JOINよりSQLite最適化しやすい）
     if specialty:
-        query = query.join(Facility.specialities).filter(
-            or_(
-                Specialty.specialty_name.contains(specialty),
-                Specialty.specialty_code == specialty,
+        codes = _resolve_specialty_codes(db, specialty)
+        if codes:
+            exists_q = (
+                db.query(Specialty.id)
+                .filter(
+                    Specialty.facility_id == Facility.id,
+                    Specialty.specialty_code.in_(codes),
+                )
+                .exists()
             )
-        ).distinct()
+        else:
+            exists_q = (
+                db.query(Specialty.id)
+                .filter(
+                    Specialty.facility_id == Facility.id,
+                    Specialty.specialty_name.contains(specialty),
+                )
+                .exists()
+            )
+        query = query.filter(exists_q)
 
     total = query.count()
     facilities = query.offset((page - 1) * per_page).limit(per_page).all()
@@ -85,9 +110,26 @@ def search_nearby(
         query = query.filter(Facility.facility_type.in_(facility_types))
 
     if specialty:
-        query = query.join(Facility.specialities).filter(
-            Specialty.specialty_name.contains(specialty)
-        ).distinct()
+        codes = _resolve_specialty_codes(db, specialty)
+        if codes:
+            exists_q = (
+                db.query(Specialty.id)
+                .filter(
+                    Specialty.facility_id == Facility.id,
+                    Specialty.specialty_code.in_(codes),
+                )
+                .exists()
+            )
+        else:
+            exists_q = (
+                db.query(Specialty.id)
+                .filter(
+                    Specialty.facility_id == Facility.id,
+                    Specialty.specialty_name.contains(specialty),
+                )
+                .exists()
+            )
+        query = query.filter(exists_q)
 
     candidates = query.all()
 
